@@ -21,7 +21,7 @@ Phases 5-6 are milestone 2 (v2) and extend the platform with AI enrichment and p
 
 ### v1 Core Platform
 
-- [ ] **Phase 1: Foundation** — Auth (Clerk), Neon DB schema, envelope credential encryption, multi-tenant isolation, query validation gate
+- [x] **Phase 1: Foundation** — Auth (Clerk), Neon DB schema, envelope credential encryption, multi-tenant isolation, query validation gate (completed 2026-03-17)
 - [ ] **Phase 2: Core AI Loop** — CSV/Excel upload, Schema Registry, NL-to-DuckDB query, Recharts visualization, plain English insights, follow-up questions
 - [ ] **Phase 3: Dashboard Layer** — Save/name dashboards, read-only share links, cache-first auto-refresh, PDF/PNG export
 - [ ] **Phase 4: Database Connections** — PostgreSQL/MySQL connection strings, credential encrypt/decrypt, schema introspection, NL-to-SQL pass-through, read-only enforcement
@@ -64,7 +64,7 @@ query can execute a mutating statement.
   5. The full Neon database schema (users, data_sources, datasets, dashboards, queries,
      results_cache) is migrated and version-controlled via Drizzle
 
-**Plans:** 1/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 01-01-PLAN.md — Scaffold Next.js 16 with Clerk auth and Drizzle schema
@@ -242,7 +242,7 @@ engage in multi-turn data conversations.
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 1. Foundation | 1/3 | In Progress|  | - |
+| 1. Foundation | 1/3 | Complete    | 2026-03-17 | - |
 | 2. Core AI Loop | v1 | 0/TBD | Not started | - |
 | 3. Dashboard Layer | v1 | 0/TBD | Not started | - |
 | 4. Database Connections | v1 | 0/TBD | Not started | - |

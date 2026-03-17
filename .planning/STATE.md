@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 01-foundation/01-01-PLAN.md
-last_updated: "2026-03-17T06:36:31.829Z"
+stopped_at: Completed 01-foundation/01-02-PLAN.md
+last_updated: "2026-03-17T06:37:00.000Z"
 last_activity: 2026-03-17 — Roadmap created; ready for Phase 1 planning
 progress:
   total_phases: 6
@@ -48,6 +48,7 @@ Progress: [███░░░░░░░] 33%
 
 *Updated after each plan completion*
 | Phase 01-foundation P01 | 5 | 2 tasks | 22 files |
+| Phase 01-foundation P02 | 4 | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -66,6 +67,8 @@ Full decision log in PROJECT.md Key Decisions table. Decisions relevant to Phase
 - [Phase 01-foundation]: middleware.ts placed at project root (not src/) — Next.js silently ignores middleware inside src/
 - [Phase 01-foundation]: text('id').primaryKey() for users table — Clerk IDs are strings like user_2abc..., not UUIDs
 - [Phase 01-foundation]: Migration SQL generated but not applied — DATABASE_URL is placeholder; user must apply after Neon setup
+- [Phase 01-foundation]: cryptography>=42.0.0 used (not 47.0.0 as researched) — system Python 3.9 limited to max 46.0.5; AESGCM API identical
+- [Phase 01-foundation]: exp.Truncate does not exist in sqlglot 30.x; TRUNCATE rejected by top-level non-SELECT check — no special case needed
 
 ### Pending Todos
 
@@ -84,6 +87,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-17T06:36:31.826Z
-Stopped at: Completed 01-foundation/01-01-PLAN.md
+Last session: 2026-03-17T06:37:00.000Z
+Stopped at: Completed 01-foundation/01-02-PLAN.md
 Resume file: None

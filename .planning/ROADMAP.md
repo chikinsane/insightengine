@@ -64,7 +64,12 @@ query can execute a mutating statement.
   5. The full Neon database schema (users, data_sources, datasets, dashboards, queries,
      results_cache) is migrated and version-controlled via Drizzle
 
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Scaffold Next.js 16 with Clerk auth and Drizzle schema
+- [ ] 01-02-PLAN.md — FastAPI backend with encryption and query validator (TDD)
+- [ ] 01-03-PLAN.md — Multi-tenant API wiring and auth verification checkpoint
 
 ### Phase 2: Core AI Loop
 
@@ -237,7 +242,7 @@ engage in multi-turn data conversations.
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 1. Foundation | v1 | 0/TBD | Not started | - |
+| 1. Foundation | v1 | 0/3 | Planning complete | - |
 | 2. Core AI Loop | v1 | 0/TBD | Not started | - |
 | 3. Dashboard Layer | v1 | 0/TBD | Not started | - |
 | 4. Database Connections | v1 | 0/TBD | Not started | - |

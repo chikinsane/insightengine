@@ -9,7 +9,7 @@ interface Node3D {
 
 export default function BrainCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const animRef = useRef<number>()
+  const animRef = useRef<number>(0)
 
   useEffect(() => {
     const canvas = canvasRef.current

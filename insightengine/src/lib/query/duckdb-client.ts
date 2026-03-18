@@ -1,110 +1,140 @@
-import * as fs from 'fs'
-import * as path from 'path'
+/**
+ * SQL query execution over file buffers.
+ *
+ * Uses better-sqlite3 (SQLite in-memory) instead of DuckDB because
+ * DuckDB's native module requires libduckdb.so — a shared library that
+ * doesn't exist in Netlify's serverless Lambda environment.
+ * better-sqlite3 statically compiles SQLite into its .node file and only
+ * needs glibc/pthread, which are always present on Linux.
+ */
+import Database from 'better-sqlite3'
+import Papa from 'papaparse'
+import * as XLSX from 'xlsx'
 import type { QueryResult } from '@/types/query'
+import { formatResult } from './result-formatter'
+
+type ColType = 'REAL' | 'TEXT'
 
 /**
- * Executes a SQL query over a file buffer using DuckDB in-memory instance.
- * Supports CSV and XLSX files. Always cleans up temp files and connections.
+ * Samples up to 50 non-empty values in a column and returns REAL if ≥80%
+ * parse cleanly as numbers after stripping currency/formatting characters.
+ */
+function detectColType(values: string[]): ColType {
+  const sample = values.filter((v) => v && v.trim() !== '').slice(0, 50)
+  if (sample.length === 0) return 'TEXT'
+  const numericCount = sample.filter((v) => {
+    const n = v.replace(/[₹$€£,\s%]/g, '').trim()
+    return n !== '' && !isNaN(Number(n))
+  }).length
+  return numericCount / sample.length >= 0.8 ? 'REAL' : 'TEXT'
+}
+
+/**
+ * Converts a raw string cell to the appropriate SQLite value.
+ * Strips currency/formatting chars for REAL columns.
+ */
+function toSQLiteValue(raw: string, colType: ColType): number | string | null {
+  if (raw === null || raw === undefined || raw.trim() === '') return null
+  if (colType === 'REAL') {
+    const stripped = raw.replace(/[₹$€£,\s%]/g, '').trim()
+    const n = Number(stripped)
+    return isNaN(n) ? null : n
+  }
+  return raw
+}
+
+/**
+ * Executes a SQL SELECT query over a CSV or XLSX file buffer.
+ * - Parses the file to rows[]
+ * - Auto-detects numeric columns and stores them as REAL (enables SUM/AVG/etc.)
+ * - Loads all rows into an in-memory SQLite table named "data"
+ * - Runs the query and returns a typed QueryResult
  */
 export async function executeQueryOnFile(
   fileBuffer: Buffer,
   sql: string,
-  datasetId: string,
+  _datasetId: string,
   fileType: 'csv' | 'xlsx'
 ): Promise<QueryResult> {
-  // We need to import DuckDB dynamically since it's an external native module
-  const { DuckDBInstance } = await import('@duckdb/node-api')
+  let headers: string[] = []
+  let rawRows: Record<string, string>[] = []
 
-  let tmpPath: string | null = null
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let instance: any = null
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let connection: any = null
+  // ── Parse file ──────────────────────────────────────────────────────────
+  if (fileType === 'xlsx') {
+    const workbook = XLSX.read(fileBuffer, { type: 'buffer' })
+    const sheetName = workbook.SheetNames[0]
+    const sheet = workbook.Sheets[sheetName]
+    const data = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
+      defval: '',
+    })
+    if (data.length === 0) return { columns: [], rows: [], rowCount: 0, sql }
+    headers = Object.keys(data[0])
+    rawRows = data.map((row) =>
+      Object.fromEntries(
+        Object.entries(row).map(([k, v]) => [k, String(v ?? '')])
+      )
+    ) as Record<string, string>[]
+  } else {
+    const csvText = fileBuffer.toString('utf8')
+    const result = Papa.parse<Record<string, string>>(csvText, {
+      header: true,
+      skipEmptyLines: true,
+      dynamicTyping: false,
+    })
+    headers = result.meta.fields ?? []
+    rawRows = result.data
+  }
+
+  if (headers.length === 0 || rawRows.length === 0) {
+    return { columns: [], rows: [], rowCount: 0, sql }
+  }
+
+  // ── Detect column types ──────────────────────────────────────────────────
+  const colTypes: Record<string, ColType> = {}
+  for (const h of headers) {
+    colTypes[h] = detectColType(rawRows.map((r) => r[h] ?? ''))
+  }
+
+  // ── Build in-memory SQLite DB ────────────────────────────────────────────
+  const db = new Database(':memory:')
 
   try {
-    // Write buffer to temp file
-    const ext = fileType === 'xlsx' ? 'csv' : fileType
-    tmpPath = path.join('/tmp', `${datasetId}.${ext}`)
+    // Create table — double-quote every column name to handle spaces, ₹, ()
+    const colDefs = headers
+      .map((h) => `"${h.replace(/"/g, '""')}" ${colTypes[h]}`)
+      .join(', ')
+    db.exec(`CREATE TABLE data (${colDefs})`)
 
-    if (fileType === 'xlsx') {
-      // Convert XLSX to CSV using SheetJS
-      const XLSX = await import('xlsx')
-      const workbook = XLSX.read(fileBuffer, { type: 'buffer' })
-      const firstSheetName = workbook.SheetNames[0]
-      const worksheet = workbook.Sheets[firstSheetName]
-      const csvData = XLSX.utils.sheet_to_csv(worksheet)
-      fs.writeFileSync(tmpPath, csvData, 'utf8')
-    } else {
-      fs.writeFileSync(tmpPath, fileBuffer)
-    }
-
-    // Create in-memory DuckDB instance
-    instance = await DuckDBInstance.create(':memory:')
-    connection = await instance.connect()
-
-    // Load file into "data" table.
-    // Use read_csv with header=true to preserve column names exactly
-    // (including Unicode like ₹, spaces, and parentheses).
-    try {
-      await connection.run(
-        `CREATE TABLE data AS SELECT * FROM read_csv('${tmpPath}', header=true, auto_detect=true)`
-      )
-    } catch (csvErr) {
-      const msg = csvErr instanceof Error ? csvErr.message : String(csvErr)
-      throw new Error(`Failed to load CSV into DuckDB: ${msg}. File: ${tmpPath}, Type: ${fileType}`)
-    }
-
-    // Execute the user's SQL
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let reader: any
-    try {
-      reader = await connection.runAndReadAll(sql)
-    } catch (sqlErr) {
-      const msg = sqlErr instanceof Error ? sqlErr.message : String(sqlErr)
-      throw new Error(`SQL execution failed: ${msg}. Query: ${sql.slice(0, 200)}`)
-    }
-    const columns = reader.columnNames()
-    const columnTypes = reader.columnTypes()
-    const rows = reader.getRows()
-
-    // Build QueryResult
-    const columnMeta = columns.map((name: string, i: number) => ({
-      name,
-      type: columnTypes[i]?.toString() ?? 'unknown',
-    }))
-
-    const rowObjects: Record<string, unknown>[] = rows.map((row: unknown[]) => {
-      const obj: Record<string, unknown> = {}
-      columns.forEach((col: string, i: number) => {
-        obj[col] = row[i]
-      })
-      return obj
-    })
-
-    return {
-      columns: columnMeta,
-      rows: rowObjects,
-      rowCount: rowObjects.length,
-      sql,
-    }
-  } finally {
-    // Always clean up resources
-    try {
-      if (connection) await connection.close()
-    } catch {
-      // ignore close errors
-    }
-    try {
-      if (instance) await instance.close()
-    } catch {
-      // ignore close errors
-    }
-    if (tmpPath) {
-      try {
-        fs.unlinkSync(tmpPath)
-      } catch {
-        // ignore unlink errors
+    // Bulk insert inside a transaction for speed
+    const placeholders = headers.map(() => '?').join(', ')
+    const insertStmt = db.prepare(`INSERT INTO data VALUES (${placeholders})`)
+    const insertAll = db.transaction((rows: Record<string, string>[]) => {
+      for (const row of rows) {
+        insertStmt.run(headers.map((h) => toSQLiteValue(row[h] ?? '', colTypes[h])))
       }
+    })
+    insertAll(rawRows)
+
+    // ── Execute query ──────────────────────────────────────────────────────
+    let resultRows: Record<string, unknown>[]
+    try {
+      const stmt = db.prepare(sql)
+      resultRows = stmt.all() as Record<string, unknown>[]
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      throw new Error(`SQL execution failed: ${msg}. Query: ${sql.slice(0, 300)}`)
     }
+
+    if (resultRows.length === 0) {
+      // Still return correct column names when there are zero result rows
+      const cols = db.prepare(sql).columns().map((c) => c.name)
+      return formatResult(cols, [], sql)
+    }
+
+    const cols = Object.keys(resultRows[0])
+    const rows = resultRows.map((row) => cols.map((c) => row[c]))
+    return formatResult(cols, rows, sql)
+  } finally {
+    db.close()
   }
 }

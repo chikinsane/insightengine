@@ -8,16 +8,8 @@
 # The Next.js plugin generates this exact function name — must match exactly.
 [functions."___netlify-server-handler"]
   node_bundler = "nft"
-  # Force-include the entire @duckdb directory so the platform-specific
-  # .node binary (installed by npm on the Linux build host) is available at runtime.
-  included_files = ["node_modules/@duckdb/**"]
-  external_node_modules = [
-    "@duckdb/node-api",
-    "@duckdb/node-bindings",
-    "@duckdb/node-bindings-linux-x64",
-    "@duckdb/node-bindings-linux-arm64",
-    "@duckdb/node-bindings-darwin-arm64",
-    "@duckdb/node-bindings-darwin-x64",
-    "@duckdb/node-bindings-win32-x64",
-    "@duckdb/node-bindings-win32-arm64"
-  ]
+  # better-sqlite3 has a prebuilt .node file that statically links SQLite —
+  # no external .so dependencies, unlike DuckDB. Mark it external so NFT
+  # copies the prebuilt binary as-is instead of trying to bundle it.
+  included_files = ["node_modules/better-sqlite3/**"]
+  external_node_modules = ["better-sqlite3"]

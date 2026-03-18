@@ -1,0 +1,10 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[functions."___netlify-handler"]
+  node_bundler = "nft"
+  external_node_modules = ["@duckdb/node-api", "@duckdb/node-bindings"]

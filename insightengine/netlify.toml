@@ -5,6 +5,19 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-[functions."___netlify-handler"]
+# The Next.js plugin generates this exact function name — must match exactly.
+[functions."___netlify-server-handler"]
   node_bundler = "nft"
-  external_node_modules = ["@duckdb/node-api", "@duckdb/node-bindings"]
+  # Force-include the entire @duckdb directory so the platform-specific
+  # .node binary (installed by npm on the Linux build host) is available at runtime.
+  included_files = ["node_modules/@duckdb/**"]
+  external_node_modules = [
+    "@duckdb/node-api",
+    "@duckdb/node-bindings",
+    "@duckdb/node-bindings-linux-x64",
+    "@duckdb/node-bindings-linux-arm64",
+    "@duckdb/node-bindings-darwin-arm64",
+    "@duckdb/node-bindings-darwin-x64",
+    "@duckdb/node-bindings-win32-x64",
+    "@duckdb/node-bindings-win32-arm64"
+  ]

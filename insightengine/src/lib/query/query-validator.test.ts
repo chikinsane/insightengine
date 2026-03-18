@@ -97,9 +97,12 @@ describe('validateColumnReferences', () => {
     expect(result.valid).toBe(true)
   })
 
-  it('returns invalid with unknown columns listed', () => {
+  it('returns invalid with unknown double-quoted columns listed', () => {
+    // Our prompt requires Claude to always double-quote column references.
+    // Only double-quoted identifiers are validated against the schema;
+    // bare words are treated as aliases/functions and never flagged.
     const result = validateColumnReferences(
-      'SELECT name, salary FROM data',
+      'SELECT "name", "salary" FROM data',
       ['name', 'age']
     )
     expect(result.valid).toBe(false)

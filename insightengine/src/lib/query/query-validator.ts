@@ -38,64 +38,36 @@ export function validateSQL(query: string): ValidationResult {
 }
 
 /**
- * Extracts column-like identifiers from SQL and checks each against the valid columns list.
- * This is a best-effort check — it catches obvious hallucinated columns.
+ * Validates that any double-quoted identifiers in the SQL actually exist in the schema.
+ *
+ * Strategy: our NL-to-SQL prompt instructs Claude to ALWAYS double-quote every column
+ * reference (e.g. "Basic Salary (₹)", "State"). Bare words are therefore always
+ * SQL functions, keywords, or user-defined aliases — never raw column names — so we
+ * only need to validate the quoted subset. This avoids false positives on computed
+ * aliases like `employee_count` or `percentage`.
  */
 export function validateColumnReferences(
   sql: string,
   validColumns: string[]
 ): ValidationResult {
-  // Extract identifiers: bare words and backtick/double-quote quoted names
-  // We skip SQL keywords and table aliases
-  const SQL_KEYWORDS = new Set([
-    'select', 'from', 'where', 'and', 'or', 'not', 'in', 'like', 'between',
-    'order', 'by', 'group', 'having', 'limit', 'offset', 'join', 'left', 'right',
-    'inner', 'outer', 'full', 'cross', 'on', 'as', 'distinct', 'count', 'sum',
-    'avg', 'min', 'max', 'case', 'when', 'then', 'else', 'end', 'null', 'is',
-    'true', 'false', 'with', 'union', 'all', 'except', 'intersect', 'data',
-    'cte', 'asc', 'desc', 'coalesce', 'cast', 'over', 'partition', 'row_number',
-    'rank', 'dense_rank', 'lag', 'lead', 'ntile', 'percent_rank', 'cume_dist',
-  ])
-
   const validSet = new Set(validColumns.map((c) => c.toLowerCase()))
 
-  const candidates = new Set<string>()
+  // Extract every "double-quoted" identifier from the SQL
+  const quotedPattern = /"([^"]+)"/g
+  const unknownQuoted: string[] = []
   let match: RegExpExecArray | null
 
-  // 1. Extract double-quoted identifiers first: "Basic Salary (₹)"
-  const quotedPattern = /"([^"]+)"/g
   while ((match = quotedPattern.exec(sql)) !== null) {
-    candidates.add(match[1].toLowerCase())
-  }
-
-  // 2. Remove quoted sections from sql before extracting bare identifiers
-  const sqlStripped = sql.replace(/"[^"]*"/g, ' ')
-
-  // 3. Extract bare identifiers (word characters only, not starting with digit)
-  const identifierPattern = /\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g
-  while ((match = identifierPattern.exec(sqlStripped)) !== null) {
-    const token = match[1].toLowerCase()
-    if (!SQL_KEYWORDS.has(token)) {
-      candidates.add(token)
+    const identifier = match[1]
+    if (!validSet.has(identifier.toLowerCase())) {
+      unknownQuoted.push(identifier)
     }
   }
 
-  // Only flag as unknown if none of the valid columns could possibly match
-  // (bare tokens like "salary" might be partial matches for "Basic Salary (₹)")
-  const validBareWords = new Set(
-    validColumns.flatMap((c) =>
-      c.toLowerCase().split(/[\s\W]+/).filter(Boolean)
-    )
-  )
-
-  const unknownColumns = [...candidates].filter(
-    (c) => !validSet.has(c) && !validBareWords.has(c)
-  )
-
-  if (unknownColumns.length > 0) {
+  if (unknownQuoted.length > 0) {
     return {
       valid: false,
-      reason: `Unknown columns: ${unknownColumns.join(', ')}. Valid columns are: ${validColumns.join(', ')}.`,
+      reason: `Unknown columns: ${unknownQuoted.join(', ')}. Valid columns are: ${validColumns.join(', ')}.`,
     }
   }
 

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 02-core-ai-loop/02-01-PLAN.md
-last_updated: "2026-03-18T03:38:49.875Z"
+stopped_at: Completed 02-core-ai-loop/02-02-PLAN.md
+last_updated: "2026-03-18T03:41:14.323Z"
 last_activity: 2026-03-17 — Roadmap created; ready for Phase 1 planning
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 8
-  completed_plans: 4
+  completed_plans: 5
   percent: 33
 ---
 
@@ -50,6 +50,7 @@ Progress: [███░░░░░░░] 33%
 | Phase 01-foundation P01 | 5 | 2 tasks | 22 files |
 | Phase 01-foundation P02 | 4 | 2 tasks | 12 files |
 | Phase 02-core-ai-loop P01 | 221s | 2 tasks | 13 files |
+| Phase 02-core-ai-loop P02 | 6 | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -73,6 +74,8 @@ Full decision log in PROJECT.md Key Decisions table. Decisions relevant to Phase
 - [Phase 02-core-ai-loop]: [Phase 02-core-ai-loop]: Numeric LOW confidence threshold set to >=0.6 (not >0.7) — 2/3 majority-numeric sample correctly infers as number:LOW per test spec
 - [Phase 02-core-ai-loop]: [Phase 02-core-ai-loop]: Leading-zero detection with /^0\d/ regex catches ZIP codes before numeric inference — ZIP 01234 is string not number
 - [Phase 02-core-ai-loop]: [Phase 02-core-ai-loop]: Currency-stripped numbers return MEDIUM confidence (not HIGH) — signals downstream that formatting was applied during type detection
+- [Phase 02-core-ai-loop]: zodOutputFormat via messages.parse() with output_config.format — avoids beta API drift
+- [Phase 02-core-ai-loop]: applyVizGuardrails is pure (no LLM call) — deterministic rules override AI suggestions; isDateColumn requires date-string regex to prevent epoch false positives
 
 ### Pending Todos
 
@@ -91,6 +94,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T03:38:49.872Z
-Stopped at: Completed 02-core-ai-loop/02-01-PLAN.md
+Last session: 2026-03-18T03:41:14.321Z
+Stopped at: Completed 02-core-ai-loop/02-02-PLAN.md
 Resume file: None

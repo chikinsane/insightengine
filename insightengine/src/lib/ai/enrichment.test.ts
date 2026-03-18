@@ -171,9 +171,11 @@ describe('runParallelEnrichment', () => {
     expect(typeof enrichment.insight).toBe('string')
     expect(enrichment.followUpQuestions).toHaveLength(3)
     expect(['bar', 'line', 'pie', 'scatter', 'table']).toContain(enrichment.vizType)
-    // chartConfig should have keys
+    // chartConfig should have keys (yKeys is an array for multi-series support)
     expect(enrichment.chartConfig).toHaveProperty('xKey')
-    expect(enrichment.chartConfig).toHaveProperty('yKey')
+    expect(enrichment.chartConfig).toHaveProperty('yKeys')
+    expect(Array.isArray(enrichment.chartConfig.yKeys)).toBe(true)
+    expect(enrichment.chartConfig.yKeys.length).toBeGreaterThan(0)
     expect(enrichment.chartConfig).toHaveProperty('title')
   })
 })

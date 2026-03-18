@@ -25,7 +25,12 @@ export interface EnrichmentResult {
   insight: string
   vizType: VizType
   followUpQuestions: string[]
-  chartConfig: { xKey: string; yKey: string; title: string }
+  chartConfig: {
+    xKey: string
+    /** All numeric output columns — first is primary, rest are secondary series */
+    yKeys: string[]
+    title: string
+  }
 }
 
 export interface ValidationResult {

@@ -238,29 +238,52 @@ export async function runParallelEnrichment(
 }
 
 /**
- * Builds a basic chart config (xKey, yKey, title) from the query result.
+ * Builds chart config from the query result.
+ * Returns yKeys[] (all numeric output columns) for multi-series support.
  */
 function buildChartConfig(
   result: QueryResult,
   vizType: VizType
-): { xKey: string; yKey: string; title: string } {
-  const { columns } = result
+): { xKey: string; yKeys: string[]; title: string } {
+  const { columns, rows } = result
 
   const DATE_TYPES = new Set(['date', 'datetime', 'timestamp'])
-  const NUMERIC_TYPES = new Set(['number', 'integer', 'float', 'double', 'bigint', 'decimal', 'int'])
+  const NUMERIC_TYPES = new Set(['number', 'integer', 'float', 'double', 'bigint', 'decimal', 'int', 'real'])
 
-  const numericCol = columns.find((c) => NUMERIC_TYPES.has(c.type.toLowerCase()))
-  const dateCol = columns.find((c) => DATE_TYPES.has(c.type.toLowerCase()))
-  const stringCol = columns.find(
-    (c) =>
-      !DATE_TYPES.has(c.type.toLowerCase()) && !NUMERIC_TYPES.has(c.type.toLowerCase())
+  // Helper: check if a column's actual row data looks numeric
+  const looksNumeric = (colName: string) => {
+    const sample = rows.slice(0, 5).map((r) => r[colName]).filter((v) => v !== null && v !== undefined)
+    return sample.length > 0 && sample.every((v) => !isNaN(Number(v)))
+  }
+
+  const numericCols = columns.filter(
+    (c) => NUMERIC_TYPES.has(c.type.toLowerCase()) || looksNumeric(c.name)
+  )
+  const dateCols = columns.filter((c) => DATE_TYPES.has(c.type.toLowerCase()))
+  const categoryCols = columns.filter(
+    (c) => !numericCols.includes(c) && !dateCols.includes(c)
   )
 
-  const xKey = dateCol?.name ?? stringCol?.name ?? columns[0]?.name ?? 'x'
-  const yKey = numericCol?.name ?? columns[1]?.name ?? columns[0]?.name ?? 'y'
-  const title = `${yKey} by ${xKey}`
+  // xKey: prefer date > category > first column
+  const xKey = dateCols[0]?.name ?? categoryCols[0]?.name ?? columns[0]?.name ?? 'x'
 
-  return { xKey, yKey, title }
+  // yKeys: all numeric columns that are NOT the xKey
+  const yKeys = numericCols
+    .filter((c) => c.name !== xKey)
+    .map((c) => c.name)
+
+  // Fallback if no numeric cols detected
+  if (yKeys.length === 0) {
+    const fallback = columns.find((c) => c.name !== xKey)?.name ?? columns[0]?.name ?? 'y'
+    yKeys.push(fallback)
+  }
+
+  const primaryY = yKeys[0]
+  const title = vizType === 'pie'
+    ? `${primaryY} breakdown`
+    : `${yKeys.length > 1 ? yKeys.join(', ') : primaryY} by ${xKey}`
+
+  return { xKey, yKeys, title }
 }
 
 // Helper: heuristically detect if a column contains date-like values

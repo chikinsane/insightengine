@@ -17,7 +17,7 @@ export async function uploadBlob(
 ): Promise<void> {
   const store = getStore(STORE_NAME)
   const key = getKey(userId, datasetId)
-  await store.set(key, buffer, { metadata })
+  await store.set(key, buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer, { metadata })
 }
 
 /**

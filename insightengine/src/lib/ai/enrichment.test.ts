@@ -31,7 +31,7 @@ describe('generateInsight', () => {
         }),
       },
     }
-    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as ReturnType<typeof getAnthropicClient>)
+    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as unknown as ReturnType<typeof getAnthropicClient>)
 
     const statSummary = 'age (numeric): min=20, max=35, mean=28.00, count=5'
     const insight = await generateInsight(statSummary, 'What is the average age?')
@@ -66,7 +66,7 @@ describe('generateFollowUps', () => {
         }),
       },
     }
-    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as ReturnType<typeof getAnthropicClient>)
+    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as unknown as ReturnType<typeof getAnthropicClient>)
 
     const followUps = await generateFollowUps('age stats summary', 'average age query')
 
@@ -158,7 +158,7 @@ describe('runParallelEnrichment', () => {
           }),
       },
     }
-    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as ReturnType<typeof getAnthropicClient>)
+    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as unknown as ReturnType<typeof getAnthropicClient>)
 
     const result = makeResult(
       [{ name: 'quarter', type: 'string' }, { name: 'sales', type: 'number' }],

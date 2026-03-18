@@ -47,7 +47,7 @@ describe('generateSQL', () => {
         parse: vi.fn().mockResolvedValue(mockParsedMessage),
       },
     }
-    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as ReturnType<typeof getAnthropicClient>)
+    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as unknown as ReturnType<typeof getAnthropicClient>)
 
     const result = await generateSQL('Who is older than 25?', mockColumns, 100)
 
@@ -70,7 +70,7 @@ describe('generateSQL', () => {
         parse: vi.fn().mockResolvedValue(mockParsedMessage),
       },
     }
-    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as ReturnType<typeof getAnthropicClient>)
+    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as unknown as ReturnType<typeof getAnthropicClient>)
 
     await generateSQL('Show me all data', mockColumns, 100)
 
@@ -95,7 +95,7 @@ describe('generateSQL', () => {
         parse: vi.fn().mockResolvedValue(mockParsedMessage),
       },
     }
-    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as ReturnType<typeof getAnthropicClient>)
+    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as unknown as ReturnType<typeof getAnthropicClient>)
 
     await generateSQL('Show names', mockColumns, 100, 'Unknown columns: salary')
 
@@ -124,7 +124,7 @@ describe('executeWithRetry', () => {
         parse: vi.fn().mockResolvedValue(mockParsedMessage),
       },
     }
-    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as ReturnType<typeof getAnthropicClient>)
+    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as unknown as ReturnType<typeof getAnthropicClient>)
     vi.mocked(executeQueryOnFile).mockResolvedValue(mockQueryResult)
 
     const result = await executeWithRetry(
@@ -155,7 +155,7 @@ describe('executeWithRetry', () => {
         parse: vi.fn().mockResolvedValue(mockParsedMessage),
       },
     }
-    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as ReturnType<typeof getAnthropicClient>)
+    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as unknown as ReturnType<typeof getAnthropicClient>)
 
     // Fail first, succeed second
     vi.mocked(executeQueryOnFile)
@@ -189,7 +189,7 @@ describe('executeWithRetry', () => {
         parse: vi.fn().mockResolvedValue(mockParsedMessage),
       },
     }
-    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as ReturnType<typeof getAnthropicClient>)
+    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as unknown as ReturnType<typeof getAnthropicClient>)
     vi.mocked(executeQueryOnFile).mockRejectedValue(new Error('column does not exist'))
 
     await expect(

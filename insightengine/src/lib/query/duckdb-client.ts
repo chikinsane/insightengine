@@ -16,8 +16,10 @@ export async function executeQueryOnFile(
   const { DuckDBInstance } = await import('@duckdb/node-api')
 
   let tmpPath: string | null = null
-  let instance: Awaited<ReturnType<typeof DuckDBInstance.create>> | null = null
-  let connection: Awaited<ReturnType<typeof instance.connect>> | null = null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let instance: any = null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let connection: any = null
 
   try {
     // Write buffer to temp file
@@ -52,14 +54,14 @@ export async function executeQueryOnFile(
     const rows = reader.getRows()
 
     // Build QueryResult
-    const columnMeta = columns.map((name, i) => ({
+    const columnMeta = columns.map((name: string, i: number) => ({
       name,
       type: columnTypes[i]?.toString() ?? 'unknown',
     }))
 
-    const rowObjects: Record<string, unknown>[] = rows.map((row) => {
+    const rowObjects: Record<string, unknown>[] = rows.map((row: unknown[]) => {
       const obj: Record<string, unknown> = {}
-      columns.forEach((col, i) => {
+      columns.forEach((col: string, i: number) => {
         obj[col] = row[i]
       })
       return obj

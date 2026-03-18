@@ -59,19 +59,38 @@ export function validateColumnReferences(
 
   const validSet = new Set(validColumns.map((c) => c.toLowerCase()))
 
-  // Extract bare identifiers (word characters only, not starting with digit)
-  const identifierPattern = /\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g
   const candidates = new Set<string>()
   let match: RegExpExecArray | null
 
-  while ((match = identifierPattern.exec(sql)) !== null) {
+  // 1. Extract double-quoted identifiers first: "Basic Salary (₹)"
+  const quotedPattern = /"([^"]+)"/g
+  while ((match = quotedPattern.exec(sql)) !== null) {
+    candidates.add(match[1].toLowerCase())
+  }
+
+  // 2. Remove quoted sections from sql before extracting bare identifiers
+  const sqlStripped = sql.replace(/"[^"]*"/g, ' ')
+
+  // 3. Extract bare identifiers (word characters only, not starting with digit)
+  const identifierPattern = /\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g
+  while ((match = identifierPattern.exec(sqlStripped)) !== null) {
     const token = match[1].toLowerCase()
     if (!SQL_KEYWORDS.has(token)) {
       candidates.add(token)
     }
   }
 
-  const unknownColumns = [...candidates].filter((c) => !validSet.has(c))
+  // Only flag as unknown if none of the valid columns could possibly match
+  // (bare tokens like "salary" might be partial matches for "Basic Salary (₹)")
+  const validBareWords = new Set(
+    validColumns.flatMap((c) =>
+      c.toLowerCase().split(/[\s\W]+/).filter(Boolean)
+    )
+  )
+
+  const unknownColumns = [...candidates].filter(
+    (c) => !validSet.has(c) && !validBareWords.has(c)
+  )
 
   if (unknownColumns.length > 0) {
     return {

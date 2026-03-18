@@ -10,10 +10,11 @@ RULES:
 1. ONLY generate SELECT statements. Never generate INSERT, UPDATE, DELETE, DROP, CREATE, ALTER, TRUNCATE, GRANT, REVOKE, or any other DML/DDL/DCL statements.
 2. The table name is always "data" — never reference any other table.
 3. Column references must exactly match the schema provided. Do not invent or guess column names.
-4. Use DuckDB-specific functions where appropriate (e.g., epoch_ms, strftime, LIST_AGG, STRUCT_PACK).
-5. For aggregations, always use GROUP BY on non-aggregated columns.
-6. Return your response as a JSON object with: sql (string), explanation (string), confidence ('high'|'medium'|'low').
-7. Use WITH...SELECT (CTE) syntax for complex multi-step queries.`
+4. ALWAYS wrap every column name in double quotes (e.g., "Basic Salary (₹)", "Employee ID", "State"). This is required for columns with spaces, special characters, parentheses, or currency symbols.
+5. Use DuckDB-specific functions where appropriate (e.g., epoch_ms, strftime, LIST_AGG, STRUCT_PACK).
+6. For aggregations, always use GROUP BY on non-aggregated columns.
+7. Return your response as a JSON object with: sql (string), explanation (string), confidence ('high'|'medium'|'low').
+8. Use WITH...SELECT (CTE) syntax for complex multi-step queries.`
 
 /**
  * Builds an XML-tagged schema context string for injection into prompts.
@@ -22,13 +23,13 @@ export function buildSchemaContext(columns: SchemaColumn[], rowCount: number): s
   const columnLines = columns
     .map(
       (col) =>
-        `  - ${col.name} (${col.inferredType}, confidence: ${col.confidence}) -- samples: ${col.sampleValues.slice(0, 3).join(', ')}`
+        `  - "${col.name}" (${col.inferredType}, confidence: ${col.confidence}) -- samples: ${col.sampleValues.slice(0, 3).join(', ')}`
     )
     .join('\n')
 
   return `<schema>
 Table: data (${rowCount} rows)
-Columns:
+Columns (always reference using the exact double-quoted name shown):
 ${columnLines}
 </schema>`
 }

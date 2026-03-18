@@ -21,10 +21,20 @@ export interface QueryResult {
   sql: string
 }
 
+export interface PrebuiltDashboard {
+  title: string
+  description: string
+  question: string
+  category: 'overview' | 'breakdown' | 'distribution' | 'trend' | 'comparison'
+  icon: string
+}
+
 export interface EnrichmentResult {
   insight: string
   vizType: VizType
   followUpQuestions: string[]
+  relatedSearches: string[]
+  prebuiltDashboards: PrebuiltDashboard[]
   chartConfig: {
     xKey: string
     /** All numeric output columns — first is primary, rest are secondary series */

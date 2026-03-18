@@ -141,8 +141,8 @@ export async function POST(
       throw err
     }
 
-    // Parallel enrichment: insight + vizType + follow-up questions
-    const enrichment = await runParallelEnrichment(queryResult, question.trim())
+    // Parallel enrichment: insight + vizType + follow-ups + related searches + dashboard templates
+    const enrichment = await runParallelEnrichment(queryResult, question.trim(), columns)
 
     // Persist query record to Neon
     const [savedQuery] = await db
@@ -176,6 +176,8 @@ export async function POST(
         insight: enrichment.insight,
         vizType: enrichment.vizType,
         followUpQuestions: enrichment.followUpQuestions,
+        relatedSearches: enrichment.relatedSearches,
+        prebuiltDashboards: enrichment.prebuiltDashboards,
         chartConfig: enrichment.chartConfig,
       },
     })

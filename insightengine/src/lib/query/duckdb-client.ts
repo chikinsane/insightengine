@@ -42,13 +42,27 @@ export async function executeQueryOnFile(
     instance = await DuckDBInstance.create(':memory:')
     connection = await instance.connect()
 
-    // Load file into "data" table
-    await connection.run(
-      `CREATE TABLE data AS SELECT * FROM read_csv_auto('${tmpPath}')`
-    )
+    // Load file into "data" table.
+    // Use read_csv with header=true to preserve column names exactly
+    // (including Unicode like ₹, spaces, and parentheses).
+    try {
+      await connection.run(
+        `CREATE TABLE data AS SELECT * FROM read_csv('${tmpPath}', header=true, auto_detect=true)`
+      )
+    } catch (csvErr) {
+      const msg = csvErr instanceof Error ? csvErr.message : String(csvErr)
+      throw new Error(`Failed to load CSV into DuckDB: ${msg}. File: ${tmpPath}, Type: ${fileType}`)
+    }
 
     // Execute the user's SQL
-    const reader = await connection.runAndReadAll(sql)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let reader: any
+    try {
+      reader = await connection.runAndReadAll(sql)
+    } catch (sqlErr) {
+      const msg = sqlErr instanceof Error ? sqlErr.message : String(sqlErr)
+      throw new Error(`SQL execution failed: ${msg}. Query: ${sql.slice(0, 200)}`)
+    }
     const columns = reader.columnNames()
     const columnTypes = reader.columnTypes()
     const rows = reader.getRows()

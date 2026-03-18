@@ -105,5 +105,5 @@ export async function executeWithRetry(
     }
   }
 
-  throw new Error('Could not generate a valid query after 3 attempts')
+  throw new Error(`Could not generate a valid query after 3 attempts. Last error: ${lastError}`)
 }

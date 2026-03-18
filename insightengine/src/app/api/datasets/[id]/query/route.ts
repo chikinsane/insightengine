@@ -127,10 +127,13 @@ export async function POST(
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       if (msg.includes('Could not generate a valid query after 3 attempts')) {
+        // Extract the last error detail for the response
+        const detail = msg.replace('Could not generate a valid query after 3 attempts. Last error: ', '')
+        console.error('[query/route] NL-to-SQL failed:', msg)
         return NextResponse.json(
           {
-            error:
-              'Unable to answer this question. Try rephrasing or ask something simpler about your data.',
+            error: 'Unable to answer this question. Try rephrasing or ask something simpler about your data.',
+            detail,
           },
           { status: 422 }
         )

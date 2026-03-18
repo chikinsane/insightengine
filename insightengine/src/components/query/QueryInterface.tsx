@@ -89,9 +89,10 @@ export default function QueryInterface({
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(
-          (data as { error?: string }).error ?? `Query failed (${res.status})`
-        )
+        const errData = data as { error?: string; detail?: string }
+        const msg = errData.error ?? `Query failed (${res.status})`
+        const detail = errData.detail ? ` — ${errData.detail}` : ''
+        throw new Error(`${msg}${detail}`)
       }
 
       setResult(data as QueryResponse)

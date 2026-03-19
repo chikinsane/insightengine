@@ -6,6 +6,7 @@ import type { SchemaColumn } from '@/types/query'
 import FileUpload, { type UploadResponse } from '@/components/upload/FileUpload'
 import SchemaPreview from '@/components/upload/SchemaPreview'
 import QueryInterface from '@/components/query/QueryInterface'
+import { HistoryPanel } from '@/components/HistoryPanel'
 
 const BrainCanvas = dynamic(() => import('@/components/BrainCanvas'), { ssr: false })
 
@@ -46,6 +47,7 @@ export default function DashboardClient({ userId }: { userId: string }) {
   const [confirmedSchema, setConfirmedSchema] = useState<SchemaColumn[] | null>(null)
   const [existingDatasets, setExistingDatasets] = useState<StoredDataset[]>([])
   const [loadingDatasets, setLoadingDatasets] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
 
   // Fetch existing datasets once on mount
   useEffect(() => {
@@ -108,6 +110,26 @@ export default function DashboardClient({ userId }: { userId: string }) {
     setConfirmedSchema(null)
   }
 
+  function handleHistorySelect(datasetId: string, datasetName: string, question: string) {
+    // Find the stored dataset to get its schema
+    const ds = existingDatasets.find(d => d.id === datasetId)
+    if (!ds) return
+    const cols: SchemaColumn[] = ds.schema?.columns ?? []
+    setActiveDataset({
+      datasetId: ds.id,
+      filename: ds.name,
+      rowCount: ds.rowCount ?? 0,
+      schema: cols,
+      hasLowConfidence: false,
+    })
+    setConfirmedSchema(cols)
+    setHistoryOpen(false)
+    setView('querying')
+    // Pre-fill the question — QueryInterface picks it up via key trick
+    // We pass it through a URL-safe state mechanism
+    sessionStorage.setItem('prefill_question', question)
+  }
+
   // ── Confirmed datasets list (for home view) ───────────────────────────────
 
   const confirmedDatasets = existingDatasets.filter(
@@ -139,7 +161,7 @@ export default function DashboardClient({ userId }: { userId: string }) {
         <nav className="hidden md:flex items-center gap-6 text-sm text-white/40">
           <button className="hover:text-white/80 transition-colors" onClick={handleBackToHome}>Dashboards</button>
           <button className="hover:text-white/80 transition-colors" onClick={handleConnectData}>Sources</button>
-          <button className="hover:text-white/80 transition-colors">History</button>
+          <button className="hover:text-white/80 transition-colors" onClick={() => setHistoryOpen(true)}>History</button>
         </nav>
 
         <div className="flex items-center gap-3">
@@ -154,6 +176,15 @@ export default function DashboardClient({ userId }: { userId: string }) {
               Back
             </button>
           )}
+          <button
+            onClick={() => setHistoryOpen(true)}
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-white/50 border border-white/[0.08] hover:border-violet-500/40 hover:text-violet-300 transition-all"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
+            </svg>
+            History
+          </button>
           <button
             onClick={handleConnectData}
             className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-white/50 border border-white/[0.08] hover:border-violet-500/40 hover:text-violet-300 transition-all"
@@ -390,6 +421,27 @@ export default function DashboardClient({ userId }: { userId: string }) {
         )}
 
       </main>
+
+      {/* ── History slide-in panel ── */}
+      {/* Backdrop */}
+      {historyOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+          onClick={() => setHistoryOpen(false)}
+        />
+      )}
+      {/* Drawer */}
+      <div className={[
+        'fixed top-0 right-0 bottom-0 z-50 w-full max-w-md bg-[#0a0a14] border-l border-white/[0.08] shadow-2xl',
+        'transform transition-transform duration-300 ease-in-out',
+        historyOpen ? 'translate-x-0' : 'translate-x-full',
+      ].join(' ')}>
+        <HistoryPanel
+          onSelectQuery={handleHistorySelect}
+          onClose={() => setHistoryOpen(false)}
+        />
+      </div>
+
     </div>
   )
 }

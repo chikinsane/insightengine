@@ -52,12 +52,17 @@ export function validateColumnReferences(
 ): ValidationResult {
   const validSet = new Set(validColumns.map((c) => c.toLowerCase()))
 
-  // Extract every "double-quoted" identifier from the SQL
+  // Strip AS "alias" patterns first — output aliases use the same double-quote
+  // syntax as column references but must not be validated against the schema.
+  // e.g.  COUNT(*) AS "Total Headcount"  ← "Total Headcount" is an alias, not a column
+  const sqlWithoutAliases = sql.replace(/\bAS\s+"[^"]*"/gi, '')
+
+  // Extract every remaining "double-quoted" identifier — these are column references
   const quotedPattern = /"([^"]+)"/g
   const unknownQuoted: string[] = []
   let match: RegExpExecArray | null
 
-  while ((match = quotedPattern.exec(sql)) !== null) {
+  while ((match = quotedPattern.exec(sqlWithoutAliases)) !== null) {
     const identifier = match[1]
     if (!validSet.has(identifier.toLowerCase())) {
       unknownQuoted.push(identifier)

@@ -50,19 +50,27 @@ export function validateColumnReferences(
   sql: string,
   validColumns: string[]
 ): ValidationResult {
+  // Build valid set from real schema columns
   const validSet = new Set(validColumns.map((c) => c.toLowerCase()))
 
-  // Strip AS "alias" patterns first — output aliases use the same double-quote
-  // syntax as column references but must not be validated against the schema.
-  // e.g.  COUNT(*) AS "Total Headcount"  ← "Total Headcount" is an alias, not a column
-  const sqlWithoutAliases = sql.replace(/\bAS\s+"[^"]*"/gi, '')
+  // Collect every alias defined in this query via AS "..." — these are valid
+  // identifiers anywhere in the query (ORDER BY, HAVING, outer queries, etc.)
+  // e.g. COUNT(*) AS "Total Headcount" → adds "total headcount" to valid set
+  const aliasPattern = /\bAS\s+"([^"]+)"/gi
+  let aliasMatch: RegExpExecArray | null
+  while ((aliasMatch = aliasPattern.exec(sql)) !== null) {
+    validSet.add(aliasMatch[1].toLowerCase())
+  }
 
-  // Extract every remaining "double-quoted" identifier — these are column references
+  // Remove AS "alias" definitions from SQL so we don't double-validate them
+  const sqlWithoutAliasDefs = sql.replace(/\bAS\s+"[^"]*"/gi, '')
+
+  // Extract every remaining "double-quoted" identifier — these must be real columns
   const quotedPattern = /"([^"]+)"/g
   const unknownQuoted: string[] = []
   let match: RegExpExecArray | null
 
-  while ((match = quotedPattern.exec(sqlWithoutAliases)) !== null) {
+  while ((match = quotedPattern.exec(sqlWithoutAliasDefs)) !== null) {
     const identifier = match[1]
     if (!validSet.has(identifier.toLowerCase())) {
       unknownQuoted.push(identifier)

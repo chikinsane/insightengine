@@ -10,10 +10,31 @@
 import Database from 'better-sqlite3'
 import Papa from 'papaparse'
 import * as XLSX from 'xlsx'
-import type { QueryResult } from '@/types/query'
+import type { QueryResult, SchemaColumn } from '@/types/query'
 import { formatResult } from './result-formatter'
 
 type ColType = 'REAL' | 'TEXT'
+
+/** Convert a raw date string to ISO YYYY-MM-DD based on the detected format. */
+function normaliseDateToISO(raw: string, fmt: string): string {
+  if (!raw || !raw.trim()) return raw
+  if (fmt === 'DD/MM/YYYY') {
+    const m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+    if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`
+  }
+  if (fmt === 'DD-MMM-YYYY') {
+    const MONTHS: Record<string, string> = {
+      jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+      jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12',
+    }
+    const m = raw.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/)
+    if (m) {
+      const month = MONTHS[m[2].toLowerCase()]
+      if (month) return `${m[3]}-${month}-${m[1].padStart(2, '0')}`
+    }
+  }
+  return raw
+}
 
 /**
  * Samples up to 50 non-empty values in a column and returns REAL if ≥80%
@@ -54,8 +75,18 @@ export async function executeQueryOnFile(
   fileBuffer: Buffer,
   sql: string,
   _datasetId: string,
-  fileType: 'csv' | 'xlsx'
+  fileType: 'csv' | 'xlsx',
+  confirmedSchema?: SchemaColumn[]
 ): Promise<QueryResult> {
+  // Build a lookup of dateFormat by column name from the confirmed schema
+  const dateFormats: Record<string, string> = {}
+  if (confirmedSchema) {
+    for (const col of confirmedSchema) {
+      if (col.inferredType === 'date' && col.dateFormat) {
+        dateFormats[col.name] = col.dateFormat
+      }
+    }
+  }
   let headers: string[] = []
   let rawRows: Record<string, string>[] = []
 
@@ -110,7 +141,12 @@ export async function executeQueryOnFile(
     const insertStmt = db.prepare(`INSERT INTO data VALUES (${placeholders})`)
     const insertAll = db.transaction((rows: Record<string, string>[]) => {
       for (const row of rows) {
-        insertStmt.run(headers.map((h) => toSQLiteValue(row[h] ?? '', colTypes[h])))
+        insertStmt.run(headers.map((h) => {
+          const raw = row[h] ?? ''
+          // Apply date normalisation before numeric conversion
+          if (dateFormats[h]) return normaliseDateToISO(raw, dateFormats[h])
+          return toSQLiteValue(raw, colTypes[h])
+        }))
       }
     })
     insertAll(rawRows)

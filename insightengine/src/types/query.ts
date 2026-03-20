@@ -7,6 +7,9 @@ export interface SchemaColumn {
   confidence: ConfidenceLevel
   sampleValues: string[]
   nullRate: number
+  /** Detected date format string e.g. "DD/MM/YYYY" — set when format is non-ISO.
+   *  When present, the query engine normalises values to YYYY-MM-DD at insert time. */
+  dateFormat?: string
 }
 
 export interface ColumnMeta {

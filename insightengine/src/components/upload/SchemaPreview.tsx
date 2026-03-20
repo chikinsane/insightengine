@@ -3,6 +3,48 @@
 import { useState } from 'react'
 import type { SchemaColumn } from '@/types/query'
 
+// ── Data quality issue detection ─────────────────────────────────────────────
+
+interface QualityFix {
+  columnIndex: number
+  columnName: string
+  type: 'date_format' | 'currency'
+  label: string
+  detail: string
+  /** When true the fix is applied; toggled by user */
+  enabled: boolean
+}
+
+function detectQualityFixes(schema: SchemaColumn[]): QualityFix[] {
+  const fixes: QualityFix[] = []
+  schema.forEach((col, idx) => {
+    if (col.inferredType === 'date' && col.dateFormat) {
+      fixes.push({
+        columnIndex: idx,
+        columnName: col.name,
+        type: 'date_format',
+        label: `Convert "${col.name}" dates`,
+        detail: `${col.dateFormat} → YYYY-MM-DD (enables "after 2020", "before 2023" filters)`,
+        enabled: true,
+      })
+    }
+    if (col.inferredType === 'number') {
+      const hasCurrency = col.sampleValues.some(v => /[₹$€£¥]/.test(v))
+      if (hasCurrency) {
+        fixes.push({
+          columnIndex: idx,
+          columnName: col.name,
+          type: 'currency',
+          label: `Strip symbols from "${col.name}"`,
+          detail: `Remove ₹ / $ characters so SUM, AVG and comparisons work correctly`,
+          enabled: true,
+        })
+      }
+    }
+  })
+  return fixes
+}
+
 interface SchemaPreviewProps {
   datasetId: string
   schema: SchemaColumn[]
@@ -58,6 +100,7 @@ export default function SchemaPreview({
   const [columns, setColumns] = useState<SchemaColumn[]>(schema)
   const [isConfirming, setIsConfirming] = useState(false)
   const [confirmError, setConfirmError] = useState<string | null>(null)
+  const [qualityFixes, setQualityFixes] = useState<QualityFix[]>(() => detectQualityFixes(schema))
 
   function handleTypeChange(colIndex: number, newType: InferredType) {
     setColumns(prev =>
@@ -67,7 +110,20 @@ export default function SchemaPreview({
     )
   }
 
+  function handleToggleFix(fixIndex: number) {
+    setQualityFixes(prev =>
+      prev.map((f, i) => i === fixIndex ? { ...f, enabled: !f.enabled } : f)
+    )
+  }
+
   async function handleConfirm() {
+    // Apply approved fixes: if a date_format fix is disabled, clear dateFormat so
+    // the executor won't normalise that column
+    const appliedColumns = columns.map(col => {
+      const fix = qualityFixes.find(f => f.columnName === col.name && f.type === 'date_format')
+      if (fix && !fix.enabled) return { ...col, dateFormat: undefined }
+      return col
+    })
     setIsConfirming(true)
     setConfirmError(null)
 
@@ -75,7 +131,7 @@ export default function SchemaPreview({
       const res = await fetch(`/api/datasets/${datasetId}/confirm-schema`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ schema: columns }),
+        body: JSON.stringify({ schema: appliedColumns }),
       })
 
       if (!res.ok) {
@@ -83,7 +139,7 @@ export default function SchemaPreview({
         throw new Error((data as { error?: string }).error ?? `Confirmation failed (${res.status})`)
       }
 
-      onSchemaConfirmed(columns)
+      onSchemaConfirmed(appliedColumns)
     } catch (err) {
       setConfirmError(err instanceof Error ? err.message : 'Confirmation failed. Please try again.')
     } finally {
@@ -113,6 +169,52 @@ export default function SchemaPreview({
           <p className="text-xs text-amber-300/80 leading-relaxed">
             Some columns have low confidence type detection. Please review and confirm before querying.
           </p>
+        </div>
+      )}
+
+      {/* ── Data Quality Fixes ── */}
+      {qualityFixes.length > 0 && (
+        <div className="px-5 py-4 border-b border-violet-500/20 bg-violet-500/5">
+          <div className="flex items-start gap-3">
+            <div className="w-7 h-7 rounded-lg bg-violet-500/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <svg className="w-3.5 h-3.5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-white/80 mb-0.5">
+                Auto-fix detected issues
+              </p>
+              <p className="text-xs text-white/40 mb-3">
+                We found {qualityFixes.length} data quality issue{qualityFixes.length !== 1 ? 's' : ''} that can be fixed automatically before querying. Toggle to approve each fix.
+              </p>
+              <div className="space-y-2.5">
+                {qualityFixes.map((fix, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    {/* Toggle */}
+                    <button
+                      role="switch"
+                      aria-checked={fix.enabled}
+                      onClick={() => handleToggleFix(i)}
+                      className={[
+                        'relative flex-shrink-0 w-9 h-5 rounded-full transition-colors mt-0.5',
+                        fix.enabled ? 'bg-violet-500' : 'bg-white/[0.10]',
+                      ].join(' ')}
+                    >
+                      <span className={[
+                        'absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform',
+                        fix.enabled ? 'translate-x-4' : 'translate-x-0.5',
+                      ].join(' ')} />
+                    </button>
+                    <div>
+                      <p className="text-xs font-medium text-white/70">{fix.label}</p>
+                      <p className="text-[11px] text-white/35 mt-0.5">{fix.detail}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

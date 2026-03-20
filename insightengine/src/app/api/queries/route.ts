@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { queries, datasets } from '@/db/schema'
-import { eq, desc } from 'drizzle-orm'
+import { eq, desc, and } from 'drizzle-orm'
 import { getAuthenticatedUserId, ensureUserExists } from '@/lib/tenant'
 
 export async function GET() {
@@ -32,6 +32,31 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
     }
     console.error('[queries/route] Error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+/** DELETE /api/queries?datasetId=xxx  — clear all history (optionally scoped to one dataset) */
+export async function DELETE(req: NextRequest) {
+  try {
+    const userId = await getAuthenticatedUserId()
+    await ensureUserExists(userId)
+
+    const datasetId = new URL(req.url).searchParams.get('datasetId')
+
+    if (datasetId) {
+      await db.delete(queries).where(
+        and(eq(queries.userId, userId), eq(queries.datasetId, datasetId))
+      )
+    } else {
+      await db.delete(queries).where(eq(queries.userId, userId))
+    }
+
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    if (error instanceof Error && error.message === 'UNAUTHENTICATED') {
+      return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

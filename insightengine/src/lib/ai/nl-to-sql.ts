@@ -95,9 +95,9 @@ export async function executeWithRetry(
       continue
     }
 
-    // Layer 3: Execute on DuckDB
+    // Layer 3: Execute on SQLite
     try {
-      const result = await executeQueryOnFile(fileBuffer, sql, datasetId, fileType)
+      const result = await executeQueryOnFile(fileBuffer, sql, datasetId, fileType, columns)
       return { sql, explanation, result }
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err)

@@ -41,6 +41,7 @@ export function HistoryPanel({ onSelectQuery, onClose }: HistoryPanelProps) {
   const [entries, setEntries] = useState<HistoryEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [clearConfirm, setClearConfirm] = useState(false)
 
   useEffect(() => {
     fetch('/api/queries')
@@ -49,6 +50,26 @@ export function HistoryPanel({ onSelectQuery, onClose }: HistoryPanelProps) {
       .catch(() => setEntries([]))
       .finally(() => setLoading(false))
   }, [])
+
+  // ── Delete single entry (optimistic) ────────────────────────────────────
+  function handleDeleteEntry(id: string) {
+    const prev = entries
+    setEntries(e => e.filter(x => x.id !== id))
+    fetch(`/api/queries/${id}`, { method: 'DELETE' })
+      .then(r => { if (!r.ok) setEntries(prev) }) // restore on error
+      .catch(() => setEntries(prev))
+  }
+
+  // ── Clear all ────────────────────────────────────────────────────────────
+  function handleClearAll() {
+    if (!clearConfirm) { setClearConfirm(true); return }
+    const prev = entries
+    setEntries([])
+    setClearConfirm(false)
+    fetch('/api/queries', { method: 'DELETE' })
+      .then(r => { if (!r.ok) setEntries(prev) })
+      .catch(() => setEntries(prev))
+  }
 
   const filtered = search.trim()
     ? entries.filter(e =>
@@ -73,14 +94,30 @@ export function HistoryPanel({ onSelectQuery, onClose }: HistoryPanelProps) {
           <h2 className="text-lg font-bold text-white/90 tracking-tight">Query History</h2>
           <p className="text-xs text-white/30 mt-0.5">{entries.length} queries across all datasets</p>
         </div>
-        <button
-          onClick={onClose}
-          className="w-8 h-8 rounded-xl bg-white/[0.04] border border-white/[0.07] flex items-center justify-center text-white/40 hover:text-white/80 hover:bg-white/[0.07] transition-all"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-2">
+          {entries.length > 0 && (
+            <button
+              onClick={handleClearAll}
+              onBlur={() => setClearConfirm(false)}
+              className={[
+                'text-xs px-3 py-1.5 rounded-lg border transition-all',
+                clearConfirm
+                  ? 'text-red-400 border-red-500/40 bg-red-500/10'
+                  : 'text-white/30 border-white/[0.07] hover:text-red-400 hover:border-red-500/30',
+              ].join(' ')}
+            >
+              {clearConfirm ? 'Confirm clear' : 'Clear all'}
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-xl bg-white/[0.04] border border-white/[0.07] flex items-center justify-center text-white/40 hover:text-white/80 hover:bg-white/[0.07] transition-all"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -148,27 +185,42 @@ export function HistoryPanel({ onSelectQuery, onClose }: HistoryPanelProps) {
               {/* Queries for this dataset */}
               <div className="space-y-1.5 ml-1 pl-5 border-l border-white/[0.05]">
                 {items.map(entry => (
-                  <button
+                  <div
                     key={entry.id}
-                    onClick={() => onSelectQuery(entry.datasetId, entry.datasetName ?? 'Dataset', entry.naturalLanguage)}
-                    className="w-full group flex items-start gap-3 px-3 py-2.5 rounded-xl hover:bg-white/[0.04] border border-transparent hover:border-white/[0.07] transition-all text-left"
+                    className="group flex items-start gap-2"
                   >
-                    {/* Viz type badge */}
-                    <span className="flex-shrink-0 w-6 h-6 rounded-md bg-white/[0.05] flex items-center justify-center text-[11px] text-white/35 mt-0.5">
-                      {VIZ_ICONS[entry.vizType ?? 'table'] ?? '⊞'}
-                    </span>
-                    {/* Question text */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] text-white/70 group-hover:text-white/90 transition-colors leading-snug line-clamp-2">
-                        {entry.naturalLanguage}
-                      </p>
-                      <p className="text-[10px] text-white/20 mt-1">{timeAgo(entry.createdAt)}</p>
-                    </div>
-                    {/* Re-run arrow */}
-                    <svg className="w-3.5 h-3.5 text-white/15 group-hover:text-violet-400 flex-shrink-0 mt-1 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                    </svg>
-                  </button>
+                    <button
+                      onClick={() => onSelectQuery(entry.datasetId, entry.datasetName ?? 'Dataset', entry.naturalLanguage)}
+                      className="flex-1 flex items-start gap-3 px-3 py-2.5 rounded-xl hover:bg-white/[0.04] border border-transparent hover:border-white/[0.07] transition-all text-left"
+                    >
+                      {/* Viz type badge */}
+                      <span className="flex-shrink-0 w-6 h-6 rounded-md bg-white/[0.05] flex items-center justify-center text-[11px] text-white/35 mt-0.5">
+                        {VIZ_ICONS[entry.vizType ?? 'table'] ?? '⊞'}
+                      </span>
+                      {/* Question text */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] text-white/70 group-hover:text-white/90 transition-colors leading-snug line-clamp-2">
+                          {entry.naturalLanguage}
+                        </p>
+                        <p className="text-[10px] text-white/20 mt-1">{timeAgo(entry.createdAt)}</p>
+                      </div>
+                      {/* Re-run arrow */}
+                      <svg className="w-3.5 h-3.5 text-white/15 group-hover:text-violet-400 flex-shrink-0 mt-1 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                      </svg>
+                    </button>
+
+                    {/* Delete button — visible on hover */}
+                    <button
+                      onClick={() => handleDeleteEntry(entry.id)}
+                      title="Delete this query"
+                      className="flex-shrink-0 w-7 h-7 mt-1.5 rounded-lg flex items-center justify-center text-white/0 group-hover:text-white/25 hover:!text-red-400 hover:bg-red-500/10 transition-all"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                      </svg>
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>

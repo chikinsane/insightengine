@@ -23,11 +23,43 @@ function stripCurrency(value: string): string {
 function isDateLike(value: string): boolean {
   // ISO date: 2024-01-01
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return true
-  // US date: 01/01/2024 or 1/1/2024
+  // DD/MM/YYYY or MM/DD/YYYY: 01/01/2024 or 1/1/2024
   if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(value)) return true
-  // UK date: 01-01-2024
+  // DD-MMM-YYYY: 15-Aug-1990
+  if (/^\d{1,2}-[A-Za-z]{3}-\d{4}$/.test(value)) return true
+  // Numeric dash: 01-01-2024
   if (/^\d{1,2}-\d{2}-\d{4}$/.test(value)) return true
   return false
+}
+
+/**
+ * Detect the specific date format in a column's sample values.
+ * Returns undefined if values are already ISO (YYYY-MM-DD) or format is unknown.
+ */
+function detectDateFormat(samples: string[]): string | undefined {
+  const nonEmpty = samples.filter(v => v && v.trim() !== '')
+  if (nonEmpty.length === 0) return undefined
+
+  // DD/MM/YYYY — check if any day value exceeds 12 (proving it can't be MM/DD)
+  const slashPattern = nonEmpty.filter(v => /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(v))
+  if (slashPattern.length > 0) {
+    const hasUnambiguousDay = slashPattern.some(v => {
+      const parts = v.split('/')
+      return parseInt(parts[0], 10) > 12
+    })
+    // In Indian context, default to DD/MM/YYYY (even when ambiguous)
+    return 'DD/MM/YYYY'
+  }
+
+  // DD-MMM-YYYY (e.g. 15-Aug-1990)
+  if (nonEmpty.some(v => /^\d{1,2}-[A-Za-z]{3}-\d{4}$/i.test(v))) {
+    return 'DD-MMM-YYYY'
+  }
+
+  // Already ISO
+  if (nonEmpty.every(v => /^\d{4}-\d{2}-\d{2}$/.test(v))) return undefined
+
+  return undefined
 }
 
 /**
@@ -120,6 +152,7 @@ export function inferSchema(
     const sampleValues = nonNull.slice(0, 5)
 
     const { type, confidence } = inferColumnType(columnValues)
+    const dateFormat = type === 'date' ? detectDateFormat(sampleValues) : undefined
 
     return {
       name,
@@ -127,6 +160,7 @@ export function inferSchema(
       confidence,
       sampleValues,
       nullRate,
+      ...(dateFormat ? { dateFormat } : {}),
     }
   })
 }

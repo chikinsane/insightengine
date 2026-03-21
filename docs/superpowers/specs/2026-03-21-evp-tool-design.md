@@ -20,8 +20,10 @@ A full-stack demo EVP (Employee Value Proposition) tool that aggregates internal
 | Routing | React Router v6 |
 | Charts | Recharts + ECharts (echarts-for-react) |
 | Icons | Lucide React |
+| QR Codes | qrcode.react |
+| CSV/Excel Parsing | xlsx (SheetJS) |
 | PDF Export | jsPDF + html2canvas |
-| PPTX Export | pptxgenjs |
+| PPTX Export | pptxgenjs (charts captured via html2canvas from mounted DOM) |
 | Data | Static TypeScript synthetic data modules |
 | Hosting | Netlify (static deploy) |
 | Persistence | localStorage (survey responses, theme, view mode) |
@@ -91,8 +93,8 @@ A full-stack demo EVP (Employee Value Proposition) tool that aggregates internal
   - External Listening → `/listening`
   - EVP Insights → `/insights`
   - Export Reports → `/reports`
-  - Trend Snapshot (inline mini chart, no link)
-  - Quick Actions (copy survey link, schedule report)
+  - Trend Snapshot (inline mini sparkline, non-navigating — display only)
+  - Quick Actions (non-navigating — "Copy Survey Link" copies `/survey/q1-2026` to clipboard with a toast confirmation; "Download Report" navigates to `/reports`)
 - **Alert banner:** Top 2 critical gaps highlighted in amber
 - **Recent activity feed:** Latest 5 survey responses (anonymised)
 
@@ -109,8 +111,21 @@ Three sub-tabs: **Overview | Survey Builder | Responses**
 **Survey Builder tab:**
 - List of active surveys with share link + QR code button
 - "New Survey" button → modal with question editor
-- Pre-built template: "Aster QCIL EVP Survey Q1 2026"
+- Pre-built template: "Aster QCIL EVP Survey Q1 2026" with hardcoded ID `q1-2026`
+- Survey share URL format: `/survey/q1-2026` — this is the only active survey in the demo; HR copies this URL via the Quick Actions tile or the "Copy Link" button in Survey Builder
+- QR code generated from `qrcode.react` for the share URL
 - Question types: Likert scale, NPS, open text
+
+**Bulk Upload tab (Admin Console):**
+- HR can upload employee survey data in bulk via CSV or Excel (.xlsx) file
+- Required CSV format defined and downloadable as a template:
+  - Columns: `employee_id`, `department`, `location`, `role`, `comp_benefits`, `work_life_balance`, `career_growth`, `culture_values`, `leadership`, `work_environment`, `dei`, `wellbeing`, `clinical_excellence`, `mission_purpose`, `enps`, `feedback_positive`, `feedback_improve`
+  - Pillar columns accept values 1–5; `enps` accepts 0–10
+- "Download Template" button provides a pre-filled sample CSV
+- Drag-and-drop upload zone with file validation (column headers, value ranges)
+- On upload: parsed data merges with existing localStorage survey responses
+- Upload summary shown: rows processed, rows skipped (with reason), new aggregate scores
+- Data persists in localStorage under key `evp_uploaded_responses`
 
 **Responses tab:**
 - Table of anonymised responses (department, role, date, eNPS score)
@@ -223,7 +238,7 @@ Four sub-tabs: **Overview | Pillar Deep-Dive | Positives & Negatives | Trend**
 | Dark / Light mode | Top-right header | localStorage |
 | Mobile preview mode | Top-right header | localStorage |
 
-**Mobile preview mode:** Constrains the main content area to 390px width with a device chrome frame, so HR can preview the mobile experience without leaving desktop.
+**Mobile preview mode:** Constrains the main content area to 390px width with a device chrome frame, so HR can preview the mobile experience without leaving desktop. Navigation sidebar is hidden in mobile preview mode; a bottom tab bar replaces it. Wide tables (e.g. Responses tab) become horizontally scrollable within the 390px container.
 
 ---
 

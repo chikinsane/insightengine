@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [react()],
   // @ts-ignore - vitest extends vite config
   test: {
+    globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test-setup.ts'],
   },

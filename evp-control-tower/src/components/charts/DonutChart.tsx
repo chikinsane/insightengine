@@ -52,7 +52,7 @@ export default function DonutChart({ promoters, passives, detractors, enps }: Do
               color: '#f1f5f9',
               fontSize: '12px',
             }}
-            formatter={(value: number) => [`${value}%`, '']}
+            formatter={(value) => [`${value}%`, '']}
           />
           <Legend
             wrapperStyle={{ fontSize: '12px', color: '#94a3b8', paddingTop: '8px' }}

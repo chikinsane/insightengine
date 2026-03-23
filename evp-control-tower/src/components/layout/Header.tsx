@@ -7,6 +7,7 @@ interface HeaderProps {
   onToggleMobile: () => void
   orgName: string
   country: string
+  industry: string
 }
 
 const countryFlags: Record<string, string> = {
@@ -16,7 +17,7 @@ const countryFlags: Record<string, string> = {
   UAE: '🇦🇪',
 }
 
-export default function Header({ dark, onToggleDark, mobile, onToggleMobile, orgName, country }: HeaderProps) {
+export default function Header({ dark, onToggleDark, mobile, onToggleMobile, orgName, country, industry }: HeaderProps) {
   const flag = countryFlags[country] ?? '🏳️'
 
   return (
@@ -26,7 +27,7 @@ export default function Header({ dark, onToggleDark, mobile, onToggleMobile, org
         <span className="font-semibold text-[var(--text)]">{orgName}</span>
         <span className="text-lg">{flag}</span>
         <span className="text-xs font-medium bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 px-2 py-0.5 rounded-full">
-          Healthcare
+          {industry}
         </span>
       </div>
 

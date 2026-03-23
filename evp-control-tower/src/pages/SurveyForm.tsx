@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Check } from 'lucide-react'
-import { PILLARS } from '../data/pillars'
+import { usePillars } from '../hooks/usePillars'
 import { useSurveyData } from '../hooks/useSurveyData'
 import type { SurveyResponse } from '../types'
 
 export default function SurveyForm() {
   const params = useParams<{ id: string }>()
+  const PILLARS = usePillars()
   const surveyData = useSurveyData()
 
   const [section, setSection] = useState(1)

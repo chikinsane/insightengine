@@ -7,7 +7,7 @@ import BottomTabBar from './BottomTabBar'
 interface AppShellProps {
   theme: { dark: boolean; toggle: () => void }
   mobilePreview: { mobile: boolean; toggle: () => void }
-  org: { name: string; country: string }
+  org: { name: string; country: string; industry: string }
   onLogout: () => void
 }
 
@@ -30,6 +30,7 @@ export default function AppShell({ theme, mobilePreview, org, onLogout }: AppShe
           onToggleMobile={toggleMobile}
           orgName={org.name}
           country={org.country}
+          industry={org.industry}
         />
 
         {/* Scrollable content area — padded past header */}

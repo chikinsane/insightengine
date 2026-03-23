@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ClipboardList, Radio, Lightbulb, FileDown, TrendingUp, Zap } from 'lucide-react'
 import { useSurveyData } from '../hooks/useSurveyData'
 import { calcENPS, calcOverallScore } from '../utils/scoreCalculator'
-import { PILLARS } from '../data/pillars'
+import { usePillars } from '../hooks/usePillars'
 import { TREND_DATA } from '../data/trends'
 import { EXTERNAL_PLATFORMS } from '../data/externalPlatforms'
 import KPICard from '../components/ui/KPICard'
@@ -13,6 +13,7 @@ import Toast from '../components/ui/Toast'
 
 export default function Dashboard() {
   const navigate = useNavigate()
+  const PILLARS = usePillars()
   const surveyData = useSurveyData()
   const [toast, setToast] = useState({ visible: false, message: '' })
 

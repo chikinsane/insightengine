@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useTheme } from './hooks/useTheme'
 import { useMobilePreview } from './hooks/useMobilePreview'
 import { useOrgConfig } from './hooks/useOrgConfig'
+import { OrgContext } from './context/OrgContext'
 import AppShell from './components/layout/AppShell'
 import Landing from './pages/Landing'
 import Dashboard from './pages/Dashboard'
@@ -17,6 +18,7 @@ export default function App() {
   const orgConfig = useOrgConfig()
 
   return (
+    <OrgContext.Provider value={orgConfig.org}>
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Landing orgConfig={orgConfig} />} />
@@ -38,5 +40,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
+    </OrgContext.Provider>
   )
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PILLARS } from '../data/pillars'
+import { usePillars } from '../hooks/usePillars'
 import { SURVEY_RESPONSES } from '../data/surveyResponses'
 import { exportPDF } from '../utils/exportPDF'
 import { exportPPTX } from '../utils/exportPPTX'
@@ -11,6 +11,7 @@ import { FileDown, FileText, Settings, Eye } from 'lucide-react'
 
 export default function Reports() {
   const { org } = useOrgConfig()
+  const PILLARS = usePillars()
   const [includedPillarIds, setIncludedPillarIds] = useState<number[]>([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
   const [format, setFormat] = useState<'pdf' | 'pptx' | 'both'>('both')
   const [dateRange, setDateRange] = useState('Q1 2026 (Jan–Mar)')

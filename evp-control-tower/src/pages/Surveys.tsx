@@ -7,7 +7,7 @@ import PillarCard from '../components/ui/PillarCard'
 import Toast from '../components/ui/Toast'
 import BarChart from '../components/charts/BarChart'
 import DonutChart from '../components/charts/DonutChart'
-import { PILLARS } from '../data/pillars'
+import { usePillars } from '../hooks/usePillars'
 import { useSurveyData } from '../hooks/useSurveyData'
 import { parseCSVFile } from '../utils/csvParser'
 import type { SurveyResponse } from '../types'
@@ -24,6 +24,7 @@ interface UploadResult {
 // Tab: Overview
 // ─────────────────────────────────────────────
 function OverviewTab() {
+  const PILLARS = usePillars()
   const deptData = [
     { name: 'Nursing', value: 82 },
     { name: 'Clinical', value: 68 },

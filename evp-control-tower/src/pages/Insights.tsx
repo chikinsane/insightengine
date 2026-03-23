@@ -1,5 +1,5 @@
 import { useState, lazy, Suspense } from 'react'
-import { PILLARS } from '../data/pillars'
+import { usePillars } from '../hooks/usePillars'
 import { TREND_DATA, TREND_ANNOTATIONS } from '../data/trends'
 import TabBar from '../components/ui/TabBar'
 const RadarChart = lazy(() => import('../components/charts/RadarChart'))
@@ -51,6 +51,7 @@ const PILLAR_LINE_COLORS: Record<string, string> = {
 
 // ----- Overview Tab -----
 function OverviewTab() {
+  const PILLARS = usePillars()
   return (
     <div className="space-y-8">
       {/* Heading + badge */}
@@ -121,6 +122,7 @@ function OverviewTab() {
 
 // ----- Pillar Deep-Dive Tab -----
 function PillarDeepDiveTab() {
+  const PILLARS = usePillars()
   const [selectedPillarKey, setSelectedPillarKey] = useState(PILLARS[0].key)
   const selectedPillar = PILLARS.find(p => p.key === selectedPillarKey) ?? PILLARS[0]
 
@@ -232,6 +234,7 @@ function PillarDeepDiveTab() {
 
 // ----- Positives & Negatives Tab -----
 function PosNegTab() {
+  const PILLARS = usePillars()
   const strengths = PILLARS.filter(p => p.status === 'top-strength' || p.status === 'strength')
   const gaps = PILLARS.filter(p => p.status === 'critical' || p.status === 'gap')
 
@@ -348,6 +351,7 @@ function PosNegTab() {
 
 // ----- Trend Tab -----
 function TrendTab() {
+  const PILLARS = usePillars()
   const [selectedPillars, setSelectedPillars] = useState<string[]>([])
 
   const togglePillar = (key: string) => {

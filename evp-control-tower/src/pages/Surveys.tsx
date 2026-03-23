@@ -153,7 +153,7 @@ function BuilderTab() {
         <p className="text-xs text-[var(--muted)] mb-4">
           Print or display this QR code for employees to scan and complete the survey on their mobile device.
         </p>
-        <div className="flex justify-center p-4 bg-white rounded-xl w-fit">
+        <div className="flex justify-center p-4 bg-white dark:bg-white rounded-xl w-fit">
           <QRCodeSVG value={surveyUrl} size={160} />
         </div>
       </div>

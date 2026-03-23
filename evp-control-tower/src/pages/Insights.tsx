@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import { PILLARS } from '../data/pillars'
 import { TREND_DATA, TREND_ANNOTATIONS } from '../data/trends'
 import TabBar from '../components/ui/TabBar'
-import RadarChart from '../components/charts/RadarChart'
+const RadarChart = lazy(() => import('../components/charts/RadarChart'))
 import LineChart from '../components/charts/LineChart'
 import ScoreGauge from '../components/ui/ScoreGauge'
 import RAGBadge from '../components/ui/RAGBadge'
@@ -93,7 +93,9 @@ function OverviewTab() {
         <h2 className="text-sm font-semibold text-[var(--muted)] uppercase tracking-wider mb-4">
           Pillar Radar — Internal vs External
         </h2>
-        <RadarChart pillars={PILLARS} showExternal={true} height={400} />
+        <Suspense fallback={<div className="h-96 flex items-center justify-center text-[var(--muted)]">Loading chart...</div>}>
+          <RadarChart pillars={PILLARS} showExternal={true} height={400} />
+        </Suspense>
       </div>
 
       {/* Composite scores */}

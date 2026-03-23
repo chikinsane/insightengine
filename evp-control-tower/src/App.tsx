@@ -26,6 +26,7 @@ export default function App() {
             theme={theme}
             mobilePreview={mobilePreview}
             org={orgConfig.org}
+            onLogout={orgConfig.logout}
           />
         }>
           <Route path="/dashboard" element={<Dashboard />} />

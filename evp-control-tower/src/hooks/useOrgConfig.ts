@@ -11,5 +11,9 @@ export function useOrgConfig() {
     setOrg(config)
     localStorage.setItem('evp_org', JSON.stringify(config))
   }
-  return { org, save }
+  const logout = () => {
+    localStorage.removeItem('evp_org')
+    setOrg(DEFAULT_ORG)
+  }
+  return { org, save, logout }
 }

@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  server: { port: 5175 },
   // @ts-ignore - vitest extends vite config
   test: {
     globals: true,

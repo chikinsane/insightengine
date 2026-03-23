@@ -1,8 +1,9 @@
-import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, ClipboardList, Radio, Lightbulb, FileDown } from 'lucide-react'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { LayoutDashboard, ClipboardList, Radio, Lightbulb, FileDown, LogOut } from 'lucide-react'
 
 interface SidebarProps {
   mobile: boolean
+  onLogout: () => void
 }
 
 const navLinks = [
@@ -13,8 +14,14 @@ const navLinks = [
   { to: '/reports', icon: FileDown, label: 'Export Reports' },
 ]
 
-export default function Sidebar({ mobile }: SidebarProps) {
+export default function Sidebar({ mobile, onLogout }: SidebarProps) {
+  const navigate = useNavigate()
   if (mobile) return null
+
+  function handleLogout() {
+    onLogout()
+    navigate('/')
+  }
 
   return (
     <aside className="hidden md:flex flex-col w-60 h-screen fixed left-0 top-0 bg-[var(--card)] border-r border-[var(--border)] z-30">
@@ -29,7 +36,7 @@ export default function Sidebar({ mobile }: SidebarProps) {
       </div>
 
       {/* Nav Links */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
         {navLinks.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
@@ -45,6 +52,17 @@ export default function Sidebar({ mobile }: SidebarProps) {
           </NavLink>
         ))}
       </nav>
+
+      {/* Logout */}
+      <div className="px-3 py-4 border-t border-[var(--border)]">
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-[var(--muted)] hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:text-rose-600 text-sm font-medium transition-colors"
+        >
+          <LogOut size={18} />
+          <span>Switch Organisation</span>
+        </button>
+      </div>
     </aside>
   )
 }

@@ -30,10 +30,10 @@ export default function Landing({ orgConfig }: LandingProps) {
         {/* Logo block */}
         <div className="flex items-center gap-4 mb-2">
           <div className="w-14 h-14 rounded-full bg-rose-600 flex items-center justify-center flex-shrink-0">
-            <span className="text-white text-xl font-bold">AQ</span>
+            <span className="text-white text-xl font-bold">{name.slice(0, 2).toUpperCase() || 'EV'}</span>
           </div>
           <div>
-            <p className="text-slate-900 dark:text-white font-bold text-lg leading-tight">Aster QCIL</p>
+            <p className="text-slate-900 dark:text-white font-bold text-lg leading-tight">{name || 'Your Organisation'}</p>
             <p className="text-slate-500 dark:text-slate-400 text-sm">EVP Control Tower</p>
           </div>
         </div>
@@ -86,11 +86,19 @@ export default function Landing({ orgConfig }: LandingProps) {
               className={inputClass}
             >
               <option>Healthcare</option>
-              <option>Technology</option>
-              <option>Finance</option>
-              <option>Manufacturing</option>
+              <option>Healthtech</option>
+              <option>Pharma</option>
+              <option>FMCG</option>
               <option>Retail</option>
-              <option>Education</option>
+              <option>eCommerce</option>
+              <option>BFSI</option>
+              <option>Fintech</option>
+              <option>IT</option>
+              <option>Edtech</option>
+              <option>Telecom</option>
+              <option>Media</option>
+              <option>Automotive</option>
+              <option>Diversified Conglomerate</option>
             </select>
           </div>
         </div>

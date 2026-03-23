@@ -8,16 +8,17 @@ interface AppShellProps {
   theme: { dark: boolean; toggle: () => void }
   mobilePreview: { mobile: boolean; toggle: () => void }
   org: { name: string; country: string }
+  onLogout: () => void
 }
 
-export default function AppShell({ theme, mobilePreview, org }: AppShellProps) {
+export default function AppShell({ theme, mobilePreview, org, onLogout }: AppShellProps) {
   const { dark, toggle: toggleDark } = theme
   const { mobile, toggle: toggleMobile } = mobilePreview
 
   return (
     <div className="flex min-h-screen bg-[var(--bg)]">
       {/* Sidebar — hidden in mobile preview */}
-      <Sidebar mobile={mobile} />
+      <Sidebar mobile={mobile} onLogout={onLogout} />
 
       {/* Main column */}
       <div className={`flex flex-col flex-1 ${mobile ? '' : 'md:ml-60'}`}>
